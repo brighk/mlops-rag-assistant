@@ -1,0 +1,38 @@
+project:
+  name: "rag-assistant"
+  seed: 42
+
+# LLM Configuration
+llm:
+  model_name: "TinyLlama/TinyLlama-1.1B-intermediate-step-1431k-3T"  # Small, efficient model
+  max_length: 512
+  temperature: 0.7
+  top_p: 0.9
+  device: "cuda"  # Will fallback to cpu if no GPU
+  
+# Embedding Model (for RAG)
+embeddings:
+  model_name: "sentence-transformers/all-MiniLM-L6-v2"  # Fast, 384 dimensions
+  device: "cuda"
+
+# Vector Database
+vector_store:
+  type: "chroma"
+  persist_directory: "data/vector_store"
+  collection_name: "documents"
+  
+# RAG Configuration
+rag:
+  chunk_size: 500
+  chunk_overlap: 50
+  top_k: 3  # Number of relevant docs to retrieve
+  
+# API
+api:
+  host: "0.0.0.0"
+  port: 8000
+  
+# MLflow
+mlflow:
+  experiment_name: "rag-assistant-dev"
+  tracking_uri: "./mlruns"
