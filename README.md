@@ -42,11 +42,6 @@ All inference runs locally via Ollama. Your documents never leave your infrastru
 ### Terminal Demo — Ingestion + Query
 ![Terminal Demo](docs/screenshots/terminal-demo.png)
 
-### Example Answer with Sources
-![Example Answer with Sources](docs/screenshots/example-answer.png)
-
-> Screenshots use the included [demo dataset](#demo-dataset). Add your own to `docs/screenshots/`.
-
 ---
 
 ## Architecture
