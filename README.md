@@ -1,263 +1,366 @@
-# MLOps RAG Assistant
+# RAG Assistant — Self-Hosted Enterprise AI
 
-A production-ready MLOps project implementing Retrieval-Augmented Generation (RAG) for document question-answering using local LLMs.
+> **I build secure self-hosted AI assistants over company documentation, with local LLM inference, retrieval pipelines, API integration, monitoring, and deployment automation.**
 
-## 🎯 Project Overview
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com)
+[![Docker](https://img.shields.io/badge/docker-compose-blue.svg)](https://docs.docker.com/compose/)
+[![MLflow](https://img.shields.io/badge/MLflow-2.8+-orange.svg)](https://mlflow.org)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-This project demonstrates a complete MLOps workflow for a RAG-based AI assistant that can answer questions based on your own documents. It combines:
+**Self-hosted RAG assistant with local LLM inference, FastAPI, ChromaDB, and MLflow observability.**
 
-- **Document Processing**: Ingest and vectorize documents
-- **Semantic Search**: ChromaDB vector database for retrieval
-- **LLM Integration**: Ollama for local LLM inference
-- **Experiment Tracking**: MLflow for logging queries and responses
-- **API Service**: FastAPI for serving predictions
-- **Full MLOps**: Versioning, monitoring, and reproducibility
+Run a private, fully on-premise AI assistant over your company documents — no external API calls, no data leakage, no per-query costs.
 
-## 🏗️ Architecture
+---
+
+## Business Use Case
+
+**Private company documentation assistant for internal PDFs, run fully on-premise without external API calls.**
+
+Typical deployments:
+
+| Use Case | Example Documents |
+|----------|-------------------|
+| HR Policy Q&A | Employee handbook, onboarding guides, leave policies |
+| IT Helpdesk Automation | Runbooks, SOPs, troubleshooting guides |
+| Security Procedure Assistant | Compliance docs, incident response playbooks |
+| Engineering Knowledge Base | Architecture docs, ADRs, API references |
+
+All inference runs locally via Ollama. Your documents never leave your infrastructure.
+
+---
+
+## Screenshots
+
+### API — Swagger UI (`/docs`)
+![Swagger UI](docs/screenshots/swagger-ui.png)
+
+### MLflow — Query Observability Dashboard
+![MLflow Tracking](docs/screenshots/mlflow-tracking.png)
+
+### Terminal Demo — Ingestion + Query
+![Terminal Demo](docs/screenshots/terminal-demo.png)
+
+### Example Answer with Sources
+![Example Answer with Sources](docs/screenshots/example-answer.png)
+
+> Screenshots use the included [demo dataset](#demo-dataset). Add your own to `docs/screenshots/`.
+
+---
+
+## Architecture
+
 ```
-Documents → Embeddings → Vector DB (ChromaDB)
-                              ↓
-User Query → Retriever → Top-K Documents → LLM (Ollama) → Answer
-                              ↓
-                          MLflow Tracking
+┌──────────────────────────────────────────────────────────────────┐
+│                       INGESTION PIPELINE                         │
+│                                                                  │
+│   PDF / TXT → Text Splitter → SentenceTransformers Embeddings    │
+│                                        ↓                         │
+│                              ChromaDB Vector Store               │
+└──────────────────────────────────────────────────────────────────┘
+                                    ↓
+┌──────────────────────────────────────────────────────────────────┐
+│                        QUERY PIPELINE                            │
+│                                                                  │
+│   User Query → Embed → Similarity Search → Top-K Chunks          │
+│                                        ↓                         │
+│                     Context + Query → Ollama (local LLM)         │
+│                                        ↓                         │
+│                          Grounded Answer + Sources               │
+│                                        ↓                         │
+│                            MLflow Experiment Log                 │
+└──────────────────────────────────────────────────────────────────┘
 ```
 
-## 🛠️ Tech Stack
+Full system design: [docs/architecture.md](docs/architecture.md)
 
-- **LLM**: Ollama (Phi-3, Llama3.2, etc.)
-- **Embeddings**: SentenceTransformers (all-MiniLM-L6-v2)
-- **Vector DB**: ChromaDB
-- **Framework**: LangChain
-- **API**: FastAPI
-- **Experiment Tracking**: MLflow
-- **Data Versioning**: DVC (optional)
+---
 
-## 📊 Features
+## Tech Stack
 
-✅ Local LLM inference (privacy-first, no API costs)  
-✅ Document ingestion pipeline  
-✅ Semantic search with vector embeddings  
-✅ RAG-based question answering  
-✅ Experiment tracking with MLflow  
-✅ RESTful API for integration  
-✅ Comprehensive logging  
+| Layer | Technology |
+|-------|------------|
+| LLM Inference | [Ollama](https://ollama.com) — Phi-3, Llama 3.2, Mistral, Gemma |
+| Embeddings | SentenceTransformers (`all-MiniLM-L6-v2`) |
+| Vector Database | ChromaDB (persistent, local) |
+| Orchestration | LangChain |
+| API | FastAPI + Uvicorn |
+| Observability | MLflow |
+| Deployment | Docker Compose |
 
-## 🚀 Quick Start
+---
 
-### Prerequisites
+## Quick Start
 
-- Python 3.10+
-- Ollama installed
-- 8GB+ RAM (16GB recommended)
+### Option A — Docker Compose (Recommended)
 
-### Installation
-
-1. Clone the repository
 ```bash
-git clone https://github.com/YOUR_USERNAME/mlops-rag-assistant.git
+git clone https://github.com/koichog/mlops-rag-assistant.git
 cd mlops-rag-assistant
-```
 
-2. Create virtual environment
-```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
+cp .env.example .env
 
-3. Install dependencies
-```bash
-pip install -r requirements.txt
-pip install -e .
-```
+# Start all services: API, Ollama, MLflow
+docker compose up -d
 
-4. Install and setup Ollama
-```bash
-# Install Ollama
-curl -fsSL https://ollama.com/install.sh | sh
+# Pull a model into the Ollama container
+docker exec -it rag-ollama ollama pull phi3
 
-# Pull a model
-ollama pull phi3
+# Ingest the demo dataset
+docker exec -it rag-api python src/data/ingest_documents.py
 
-# Verify it's running
-ollama list
-```
-
-### Usage
-
-#### 1. Add Documents
-
-Place your documents (`.txt` or `.pdf`) in the `data/raw/` directory:
-```bash
-cp your_documents.txt data/raw/
-```
-
-#### 2. Ingest Documents
-```bash
-python src/data/ingest_documents.py
-```
-
-This will:
-- Process your documents
-- Create embeddings
-- Store them in ChromaDB
-
-#### 3. Test RAG System
-```bash
-python test_rag.py
-```
-
-#### 4. Start API Server
-```bash
-python src/api/main.py
-```
-
-Access the API at:
-- **Swagger UI**: http://localhost:8000/docs
-- **Health Check**: http://localhost:8000/health
-
-#### 5. Query the API
-```bash
+# Query the API
 curl -X POST "http://localhost:8000/query" \
   -H "Content-Type: application/json" \
-  -d '{"question": "What is machine learning?", "return_sources": true}'
+  -d '{"question": "What is our remote work policy?", "return_sources": true}'
 ```
 
-#### 6. View Experiments in MLflow
+| Service | URL |
+|---------|-----|
+| REST API | http://localhost:8000 |
+| Swagger UI | http://localhost:8000/docs |
+| MLflow UI | http://localhost:5000 |
+| Ollama | http://localhost:11434 |
+
+---
+
+### Option B — Local Development
+
+**Prerequisites:** Python 3.10+, [Ollama](https://ollama.com/download)
+
 ```bash
+git clone https://github.com/koichog/mlops-rag-assistant.git
+cd mlops-rag-assistant
+
+python -m venv venv && source venv/bin/activate
+
+pip install -r requirements.txt
+pip install -e .
+
+# Pull an Ollama model
+ollama pull phi3
+
+cp .env.example .env
+
+# Ingest demo documents
+python src/data/ingest_documents.py
+
+# Start API
+uvicorn src.api.main:app --reload
+
+# View experiment logs
 mlflow ui
 ```
 
-Open: http://localhost:5000
+---
 
-## 📁 Project Structure
+## Demo Dataset
+
+`data/raw/` includes a realistic corporate knowledge base ready to ingest:
+
+| File | Content |
+|------|---------|
+| `company_policies.txt` | Remote work, leave, expense, and code of conduct policies |
+| `linux_admin_guide.txt` | SSH hardening, user management, monitoring, and maintenance runbooks |
+| `mlops_notes.txt` | MLOps lifecycle, pipeline patterns, model serving, and drift detection |
+| `security_procedures.txt` | Incident response, access control, vulnerability management, and compliance |
+
+```bash
+# Ingest all demo documents
+python src/data/ingest_documents.py
+
+# Try some example queries
+curl -X POST "http://localhost:8000/query" \
+  -H "Content-Type: application/json" \
+  -d '{"question": "How many remote work days are employees allowed per week?"}'
+
+curl -X POST "http://localhost:8000/query" \
+  -H "Content-Type: application/json" \
+  -d '{"question": "What are the steps for SSH key rotation?"}'
+
+curl -X POST "http://localhost:8000/query" \
+  -H "Content-Type: application/json" \
+  -d '{"question": "How should we respond to a data breach?"}'
+```
+
+---
+
+## API Reference
+
+### `POST /query`
+
+```json
+{
+  "question": "What is our remote work policy?",
+  "return_sources": true
+}
+```
+
+**Response:**
+```json
+{
+  "question": "What is our remote work policy?",
+  "answer": "Employees may work remotely up to 3 days per week with manager approval...",
+  "sources": [
+    {
+      "content": "Remote Work Policy: Employees are permitted to work remotely...",
+      "source": "data/raw/company_policies.txt",
+      "relevance_score": 0.91
+    }
+  ],
+  "num_sources": 3,
+  "latency_ms": 1340
+}
+```
+
+### `GET /health`
+
+```json
+{
+  "status": "ok",
+  "ollama": "connected",
+  "chromadb": "connected"
+}
+```
+
+### `POST /ingest`
+
+Trigger document ingestion from `data/raw/`. Returns chunk count on completion.
+
+### `GET /documents`
+
+```json
+{
+  "total_chunks": 247
+}
+```
+
+Full interactive docs: **http://localhost:8000/docs**
+
+---
+
+## MLflow Observability
+
+Every query is automatically logged:
+
+| Artifact | Description |
+|----------|-------------|
+| `question` param | The user query |
+| `num_retrieved_docs` metric | Chunks used to build context |
+| `latency_ms` metric | End-to-end query time |
+| `answer.txt` | Full LLM response |
+| `context.txt` | Retrieved document context |
+
+```bash
+mlflow ui  # → http://localhost:5000
+```
+
+Compare query runs, inspect retrieved context, track latency over time.
+
+---
+
+## Project Structure
+
 ```
 mlops-rag-assistant/
 ├── data/
-│   ├── raw/              # Original documents
-│   ├── processed/        # Processed documents
-│   └── vector_store/     # ChromaDB storage
+│   ├── raw/                    # Source documents (PDF, TXT)
+│   ├── processed/              # Intermediate artifacts
+│   └── vector_store/           # ChromaDB persistence
 ├── src/
+│   ├── api/
+│   │   └── main.py             # FastAPI application
 │   ├── data/
-│   │   └── ingest_documents.py  # Document processing
+│   │   └── ingest_documents.py # Ingestion pipeline
 │   ├── models/
-│   │   ├── llm.py               # Transformers LLM (optional)
-│   │   └── llm_ollama.py        # Ollama LLM wrapper
-│   ├── rag/
-│   │   ├── retriever.py         # Vector retrieval
-│   │   └── pipeline.py          # Complete RAG pipeline
-│   └── api/
-│       └── main.py              # FastAPI application
+│   │   └── llm_ollama.py       # Ollama LLM wrapper
+│   └── rag/
+│       ├── retriever.py        # Vector retrieval
+│       └── pipeline.py         # RAG orchestration + MLflow
+├── docs/
+│   ├── architecture.md         # System design document
+│   └── screenshots/            # UI captures
 ├── configs/
-│   └── config.yaml       # Configuration
-├── tests/               # Unit tests
-├── notebooks/           # Jupyter notebooks
-├── docker/             # Docker files (coming soon)
-├── test_rag.py         # Testing script
+│   └── config.yaml             # All configuration
+├── docker-compose.yml          # Production deployment
+├── Dockerfile                  # API container
+├── Dockerfile.mlflow           # MLflow server container
+├── .env.example                # Environment template
 ├── requirements.txt
-└── README.md
+└── test_rag.py                 # End-to-end test script
 ```
 
-## 🎓 How It Works
+---
 
-### 1. Document Ingestion
-- Documents are split into chunks (500 chars with 50 char overlap)
-- Each chunk is converted to embeddings using SentenceTransformers
-- Embeddings stored in ChromaDB for fast semantic search
+## Configuration
 
-### 2. Query Processing
-- User query is converted to embedding
-- Top-K most similar document chunks retrieved
-- Retrieved context + query sent to LLM
-
-### 3. Answer Generation
-- LLM (via Ollama) generates answer based on context
-- Answer is grounded in your documents (reduces hallucination)
-- All interactions logged to MLflow
-
-## 🔧 Configuration
-
-Edit `configs/config.yaml`:
+**`configs/config.yaml`**
 ```yaml
-llm:
-  model_name: "microsoft/Phi-3-mini-4k-instruct"  # Model to use
-  max_length: 512                                  # Max response tokens
-  temperature: 0.7                                 # Creativity (0-1)
+rag:
+  chunk_size: 500       # Characters per document chunk
+  chunk_overlap: 50     # Overlap between consecutive chunks
+  top_k: 3             # Chunks retrieved per query
 
 embeddings:
   model_name: "sentence-transformers/all-MiniLM-L6-v2"
 
-rag:
-  chunk_size: 500      # Document chunk size
-  chunk_overlap: 50    # Overlap between chunks
-  top_k: 3            # Number of chunks to retrieve
+mlflow:
+  experiment_name: "rag-assistant-dev"
+  tracking_uri: "./mlruns"
 ```
 
-## 📈 Example Queries
-
-The system can answer questions like:
-
-- "What is machine learning?"
-- "Explain the key components of MLOps"
-- "What Python libraries are used for data science?"
-- "How does supervised learning work?"
-
-Answers are grounded in your uploaded documents!
-
-## 🐳 Docker Deployment (Coming Soon)
+**`.env`** (from `.env.example`)
 ```bash
-docker-compose up -d
+OLLAMA_HOST=http://localhost:11434
+OLLAMA_MODEL=phi3
 ```
 
-## 🧪 Testing
-```bash
-# Run unit tests
-pytest tests/
-
-# Test RAG pipeline
-python test_rag.py
-
-# Test API
-curl http://localhost:8000/health
-```
-
-## 📊 MLOps Features Demonstrated
-
-1. **Experiment Tracking**: All queries logged to MLflow
-2. **Reproducibility**: Config-driven, versioned code
-3. **Monitoring**: API metrics and logging
-4. **Modularity**: Separated concerns (retrieval, generation, API)
-5. **Scalability**: Easy to swap components (different LLMs, vector DBs)
-
-## 🔮 Future Enhancements
-
-- [ ] Streaming responses
-- [ ] Multi-document support with metadata filtering
-- [ ] A/B testing different LLMs
-- [ ] Monitoring dashboard (Prometheus + Grafana)
-- [ ] CI/CD pipeline
-- [ ] Kubernetes deployment
-- [ ] Advanced retrieval strategies (hybrid search)
-- [ ] Chat history and conversation memory
-
-## 🤝 Contributing
-
-Contributions welcome! Please feel free to submit a Pull Request.
-
-## 📄 License
-
-MIT License
-
-## 👤 Author
-
-[Your Name] - [GitHub](https://github.com/brighk)
-
-## 🙏 Acknowledgments
-
-- Ollama for local LLM inference
-- LangChain for RAG framework
-- ChromaDB for vector storage
-- MLflow for experiment tracking
+Switch models by changing `OLLAMA_MODEL` — no code changes required.
 
 ---
 
-**⭐ Star this repo if you find it helpful!**
+## Enterprise Roadmap
+
+Features planned for production enterprise deployments:
+
+- [ ] **Authentication** — API key and OAuth2/JWT middleware
+- [ ] **RBAC** — Role-based access control per document collection
+- [ ] **Audit Logs** — Tamper-proof query and access logs to PostgreSQL
+- [ ] **Prometheus + Grafana** — Real-time latency, throughput, and error dashboards
+- [ ] **PostgreSQL / pgvector** — Enterprise-scale vector storage alternative to ChromaDB
+- [ ] **S3 / MinIO Backups** — Automated vector store and model artifact backup
+- [ ] **Kubernetes Deployment** — Helm chart with autoscaling and multi-replica support
+- [ ] **Streaming Responses** — Server-Sent Events for real-time answer streaming
+- [ ] **Hybrid Search** — BM25 + semantic fusion for higher retrieval precision
+- [ ] **Multi-Collection RBAC** — Isolated document collections per team or department
+- [ ] **CI/CD Pipeline** — GitHub Actions for automated testing and container builds
+
+---
+
+## Testing
+
+```bash
+# End-to-end RAG pipeline test
+python test_rag.py
+
+# API health check
+curl http://localhost:8000/health
+
+# Unit tests
+pytest tests/
+```
+
+---
+
+## Author
+
+**Koichi Guevara** — [GitHub](https://github.com/koichog)
+
+> I build secure self-hosted AI assistants over company documentation, with local LLM inference, retrieval pipelines, API integration, monitoring, and deployment automation.
+
+---
+
+## License
+
+MIT

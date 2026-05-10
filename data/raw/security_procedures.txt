@@ -1,0 +1,229 @@
+INFORMATION SECURITY PROCEDURES
+Security Operations Team — Internal Reference
+Version 2.0 | January 2025
+===============================================
+
+SECTION 1: INCIDENT RESPONSE PLAN
+------------------------------------
+
+1.1 Incident Severity Classification
+| Severity | Description | Response Time | Examples |
+|----------|-------------|---------------|---------|
+| P1 — Critical | Active breach, data exfiltration, ransomware | Immediate (< 15 min) | Production DB compromised |
+| P2 — High | Suspected unauthorized access, malware detected | < 1 hour | Phishing credential capture |
+| P3 — Medium | Policy violation, failed intrusion attempt | < 4 hours | Brute-force attack on VPN |
+| P4 — Low | Security misconfiguration, anomalous log event | < 24 hours | Weak TLS cipher in use |
+
+1.2 Incident Response Phases
+
+Phase 1: Identification
+- Receive alert from SIEM (Splunk/Elastic), IDS, or user report.
+- Confirm the incident is real (eliminate false positives).
+- Assign severity level.
+- Page the on-call Security Engineer.
+
+Phase 2: Containment
+Short-term containment (prevent spread):
+- Isolate affected systems from the network if safe to do so.
+- Revoke compromised credentials immediately.
+- Preserve logs and memory dumps before system changes.
+
+Long-term containment:
+- Deploy firewall rules to block attacker IP ranges.
+- Rotate all potentially exposed credentials and API keys.
+- Enable additional logging on adjacent systems.
+
+Phase 3: Eradication
+- Identify root cause (entry point, vulnerability exploited).
+- Remove malware or backdoors.
+- Patch the exploited vulnerability.
+- Review all systems that interacted with the compromised host.
+
+Phase 4: Recovery
+- Restore systems from clean, verified backups.
+- Monitor recovered systems closely for 72 hours.
+- Confirm business processes resume normally.
+- Notify affected clients/users per regulatory requirements.
+
+Phase 5: Post-Incident Review
+- Conduct a blameless post-mortem within 5 business days.
+- Document: timeline, root cause, impact, response actions.
+- Publish Lessons Learned report to Security Steering Committee.
+- Update detection rules and runbooks to prevent recurrence.
+
+1.3 Communication Matrix
+| Audience | Notify When | Channel |
+|----------|-------------|---------|
+| CISO | P1 or P2 incidents | Phone + Email |
+| Legal | Data breach with PII exposure | Phone |
+| Affected clients | PII exposure or SLA impact | Email (legal-reviewed) |
+| All staff | Widespread phishing campaign | Company-wide Slack |
+| Regulators (GDPR) | PII breach affecting EU residents | Written notice within 72 hours |
+
+1.4 Data Breach Notification (GDPR)
+Under GDPR Article 33, a personal data breach must be reported to the supervisory authority
+within 72 hours of becoming aware of it. If the breach is unlikely to result in a risk to
+individuals' rights, notification to the authority is not required but must be documented.
+
+Notification to affected individuals (Article 34) is required when the breach is "likely to
+result in a high risk to the rights and freedoms" of the affected persons.
+
+Contact: DPO (dpo@acme-corp.com) must be involved in all breach notifications.
+
+---
+
+SECTION 2: ACCESS CONTROL POLICY
+-----------------------------------
+
+2.1 Principle of Least Privilege
+Every user and system account must be granted only the minimum permissions required to
+perform their role. Access rights are reviewed quarterly and upon role change.
+
+2.2 Access Request Process
+1. Employee submits access request via IT helpdesk portal.
+2. Direct manager approves the request.
+3. Data owner (system owner) grants access.
+4. Access is documented in the Access Control Register.
+5. Access reviewed at next quarterly audit.
+
+2.3 Privileged Access Management (PAM)
+All privileged accounts (admin, root, DBA) must:
+- Use a PAM solution (CyberArk, HashiCorp Vault) for credential checkout.
+- Never use shared credentials.
+- Have sessions recorded and audited.
+- Require MFA for every session.
+- Have a time-limited checkout (max 8-hour session).
+
+2.4 Service Account Controls
+- Service accounts must not be used interactively.
+- Credentials stored in secrets manager (HashiCorp Vault, AWS Secrets Manager).
+- Rotation: automated rotation every 90 days.
+- Scope: restricted to minimum required permissions per application.
+
+2.5 Multi-Factor Authentication Requirements
+MFA is required for:
+- All VPN connections
+- Cloud console access (AWS, GCP, Azure)
+- Code repositories (GitHub, GitLab)
+- CI/CD platforms (Jenkins, GitHub Actions)
+- Production database access
+- Remote desktop / jump host access
+
+Acceptable MFA methods (in order of preference):
+1. Hardware security key (FIDO2/WebAuthn — YubiKey preferred)
+2. TOTP authenticator app (Authy, Google Authenticator)
+3. Push notification (Duo Security)
+4. SMS OTP (discouraged due to SIM-swap risk; allowed only where no alternative exists)
+
+---
+
+SECTION 3: VULNERABILITY MANAGEMENT
+--------------------------------------
+
+3.1 Vulnerability Scanning Schedule
+| Scope | Tool | Frequency |
+|-------|------|-----------|
+| Internal network | Nessus / OpenVAS | Weekly |
+| Web applications | OWASP ZAP / Burp Suite | Monthly |
+| Container images | Trivy / Snyk | Every CI/CD build |
+| Dependencies (SCA) | Dependabot / Snyk | Continuous |
+| Infrastructure (IaC) | Checkov / tfsec | Every Terraform plan |
+
+3.2 Patch SLAs
+| CVSS Score | Severity | Patch Deadline |
+|-----------|----------|----------------|
+| 9.0 – 10.0 | Critical | 24 hours (or immediate isolation) |
+| 7.0 – 8.9 | High | 7 days |
+| 4.0 – 6.9 | Medium | 30 days |
+| 0.1 – 3.9 | Low | 90 days or next maintenance window |
+
+3.3 Penetration Testing
+Annual third-party penetration test covering:
+- External network perimeter
+- Web application (OWASP Top 10)
+- Internal network and lateral movement
+- Social engineering (phishing simulation)
+- API security
+
+Findings are tracked in Jira under the SEC project. Critical and High findings require
+a remediation plan within 5 business days and must be resolved within SLA.
+
+3.4 Responsible Disclosure
+External researchers who discover vulnerabilities should contact: security@acme-corp.com.
+The company commits to:
+- Acknowledge receipt within 2 business days.
+- Provide a resolution timeline within 10 business days.
+- Not pursue legal action against good-faith researchers.
+- Credit researchers in release notes (with consent).
+
+---
+
+SECTION 4: PASSWORD AND CREDENTIAL POLICY
+-------------------------------------------
+
+4.1 Password Requirements
+- Minimum length: 14 characters.
+- Complexity: Mix of uppercase, lowercase, digits, and special characters.
+- Expiry: Passwords do not automatically expire (NIST SP 800-63B guidance); changed upon
+  suspected compromise or when leaving a shared account.
+- Prohibited: Common words, keyboard patterns, or any variation of the username.
+- History: Last 12 passwords may not be reused.
+
+4.2 Password Manager
+All employees must use the company-provisioned password manager (1Password Teams).
+- Master password: 20+ characters, never reused, never stored digitally except in the PM.
+- Emergency kit: Stored physically in a sealed envelope in a locked drawer at home.
+
+4.3 API Key Management
+- Generate API keys with minimal scope (read-only where possible).
+- Never embed API keys in source code; use environment variables or secrets manager.
+- Rotate API keys: every 90 days for production systems, immediately upon suspected compromise.
+- Audit API key usage monthly; revoke unused keys.
+- Never transmit API keys via email, Slack, or ticketing systems.
+
+4.4 Secrets in Code
+Pre-commit hook required on all repositories to scan for accidentally committed secrets:
+    pre-commit install
+    # Uses detect-secrets or gitleaks hooks defined in .pre-commit-config.yaml
+
+If a secret is committed to a repository:
+1. Revoke the exposed credential immediately.
+2. Force-push a sanitized commit history (with Security team approval).
+3. Audit all systems that may have consumed the exposed credential.
+4. File a P2 security incident.
+
+---
+
+SECTION 5: COMPLIANCE AND AUDIT
+----------------------------------
+
+5.1 Applicable Frameworks
+- GDPR: General Data Protection Regulation (EU personal data)
+- SOC 2 Type II: Annual audit covering security, availability, and confidentiality
+- ISO 27001: Information security management system (target: 2026 certification)
+
+5.2 Audit Log Requirements
+The following events must be logged and retained for 12 months minimum:
+- Authentication events (success and failure)
+- Privileged access and sudo usage
+- Firewall rule changes
+- Configuration changes to production systems
+- Data export events (queries returning > 10,000 records)
+- User provisioning and deprovisioning
+
+Log integrity: Logs must be forwarded to a SIEM in real-time and stored read-only.
+Local deletion of logs on production systems is prohibited.
+
+5.3 Security Awareness Training
+- Annual mandatory training: All staff (GDPR, phishing, social engineering).
+- Role-specific training: Developers (OWASP Top 10, secure coding — annual).
+- New-hire training: Completed within first 2 weeks of employment.
+- Phishing simulation: Quarterly, coordinated with HR. Employees who fail are enrolled
+  in additional targeted training.
+
+5.4 Third-Party Risk Management
+Vendors with access to company data or systems must:
+- Complete the Vendor Security Questionnaire (VSQ) before contract signing.
+- Agree to the Data Processing Agreement (DPA) if processing personal data.
+- Undergo annual security review for Tier 1 vendors (cloud providers, key SaaS tools).
+- Notify ACME within 24 hours of any security incident affecting ACME data.

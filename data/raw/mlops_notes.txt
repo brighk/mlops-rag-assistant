@@ -1,0 +1,216 @@
+MLOPS REFERENCE NOTES
+AI/ML Platform Team — Internal Knowledge Base
+Version 1.4 | March 2025
+=============================================
+
+SECTION 1: MLOPS LIFECYCLE
+----------------------------
+
+MLOps is the set of practices that combines Machine Learning, DevOps, and Data Engineering
+to deploy and maintain ML systems in production reliably and efficiently.
+
+The MLOps lifecycle consists of six phases:
+
+1. Data Management
+   - Data collection, validation, versioning (DVC, Delta Lake, LakeFS)
+   - Feature engineering and feature store management
+   - Data quality monitoring and drift detection
+
+2. Model Development
+   - Experiment tracking (MLflow, Weights & Biases)
+   - Hyperparameter optimization (Optuna, Ray Tune)
+   - Model versioning and artifact management
+
+3. Model Evaluation
+   - Offline evaluation: accuracy, precision, recall, F1, AUC-ROC
+   - Fairness and bias auditing
+   - Comparison against baseline and previous versions
+
+4. Model Deployment
+   - Batch inference vs. real-time inference vs. streaming
+   - Blue/green deployments and canary releases
+   - Model serving infrastructure (Triton, TorchServe, vLLM, FastAPI)
+
+5. Model Monitoring
+   - Data drift detection (feature distribution shift)
+   - Concept drift (relationship between input and output changes)
+   - Performance degradation alerts
+   - Latency and throughput SLA monitoring
+
+6. Retraining and Continuous Learning
+   - Automated retraining triggers (scheduled, data-drift-triggered)
+   - Continuous training pipelines
+   - Champion/challenger model comparisons
+
+---
+
+SECTION 2: FEATURE ENGINEERING PATTERNS
+-----------------------------------------
+
+Feature Stores
+A feature store is a centralized repository for computing, storing, and serving ML features.
+Key components:
+- Offline store: Historical features for model training (Parquet, Delta Lake, BigQuery)
+- Online store: Low-latency feature serving for real-time inference (Redis, DynamoDB)
+- Feature registry: Metadata catalog for feature discoverability
+
+Common implementations: Feast, Tecton, Hopsworks, AWS SageMaker Feature Store.
+
+Feature Transformation Best Practices
+- Always fit transformers on training data only; transform validation and test sets.
+- Standardize (z-score) or normalize (min-max) numerical features based on model requirements.
+- Use target encoding with cross-validation folds to prevent leakage.
+- Store fitted transformers as artifacts alongside the model (joblib, pickle, ONNX).
+- Log feature importance metrics per experiment run for reproducibility.
+
+Feature Versioning
+- Use semantic versioning for feature definitions (v1.0.0).
+- Never modify an existing feature in-place; create a new version.
+- Document backward-incompatible changes in a CHANGELOG.
+
+---
+
+SECTION 3: MODEL TRAINING PIPELINE PATTERNS
+---------------------------------------------
+
+Pipeline Orchestration Tools
+- Apache Airflow: General-purpose DAG orchestration; mature, wide adoption.
+- Kubeflow Pipelines: Kubernetes-native ML pipelines; good for GPU workloads.
+- Prefect: Modern Python-native workflows; simple retry and observability.
+- Metaflow: Netflix-origin; excellent for data science team workflows.
+- ZenML: MLOps-specific; integrates cleanly with MLflow, Kubeflow.
+
+Training Pipeline Components (Recommended Structure)
+```
+pipeline/
+├── steps/
+│   ├── data_validation.py     # Great Expectations or Pydantic schemas
+│   ├── feature_engineering.py # Sklearn Pipeline or custom transforms
+│   ├── model_training.py      # Train + log to MLflow
+│   ├── model_evaluation.py    # Compute metrics, generate reports
+│   └── model_registration.py  # Promote to model registry if threshold met
+└── run_pipeline.py
+```
+
+Reproducibility Checklist
+- [ ] Random seed fixed and logged
+- [ ] Data version pinned (DVC tag or S3 URI with version)
+- [ ] Dependency versions locked (requirements.txt or conda env exported)
+- [ ] Training config logged as MLflow parameters
+- [ ] All artifacts (model, scaler, encoder) stored in MLflow artifact store
+- [ ] Training hardware logged (CPU/GPU type, RAM)
+
+---
+
+SECTION 4: MODEL SERVING ARCHITECTURES
+----------------------------------------
+
+Batch Inference
+- Runs on a schedule (hourly, daily) over a dataset.
+- Use cases: recommendations, risk scoring, report generation.
+- Tools: Spark, Dask, Ray Data, Pandas + scheduled Airflow DAG.
+- Output: predictions stored to database or data warehouse.
+
+Real-Time Inference (REST API)
+- Synchronous request-response; latency SLA typically < 200ms.
+- Tools: FastAPI + uvicorn, Flask, TorchServe, Triton Inference Server.
+- Deployment: Docker container behind a load balancer.
+- Auto-scaling: Kubernetes HPA based on CPU or custom metrics (Prometheus).
+
+Streaming Inference
+- Asynchronous; processes events as they arrive.
+- Tools: Apache Kafka + Python consumer, AWS Kinesis, Flink ML.
+- Use cases: fraud detection, anomaly detection, click-stream analysis.
+
+LLM Serving Specifics
+- vLLM: Best open-source option for high-throughput LLM serving (PagedAttention).
+- Ollama: Best for local/on-premise single-node deployments.
+- llama.cpp: CPU inference for resource-constrained environments.
+- TGI (Text Generation Inference): HuggingFace's production serving framework.
+- Key metrics: tokens/second, time-to-first-token, concurrent request capacity.
+
+---
+
+SECTION 5: DRIFT DETECTION
+----------------------------
+
+Data Drift
+Occurs when the statistical distribution of input features changes between training and
+production. Indicates the model may be receiving inputs outside its training distribution.
+
+Detection methods:
+- Kolmogorov-Smirnov test (KS test) for continuous features
+- Chi-squared test for categorical features
+- Population Stability Index (PSI) — PSI > 0.2 indicates significant drift
+- Jensen-Shannon divergence
+
+Tools: Evidently AI, WhyLogs, Alibi Detect, NannyML.
+
+Concept Drift
+Occurs when the relationship between input features and target variable changes. The model's
+predictions become systematically wrong even when input distribution is unchanged.
+
+Types:
+- Sudden drift: Abrupt change (e.g., COVID impact on demand models)
+- Gradual drift: Slow shift over months
+- Seasonal drift: Predictable cyclical changes
+
+Detection: Monitor prediction accuracy, calibration, and business KPIs over rolling windows.
+
+Alert Thresholds (Recommended)
+| Signal | Warning | Action Required |
+|--------|---------|-----------------|
+| PSI on feature | 0.1 – 0.2 | Investigate |
+| PSI on feature | > 0.2 | Trigger retraining |
+| Accuracy drop (vs baseline) | 5% | Notify ML team |
+| Accuracy drop (vs baseline) | 10% | Emergency retrain or rollback |
+| Prediction latency p99 | > 500ms | Scale up serving |
+
+---
+
+SECTION 6: EXPERIMENT TRACKING WITH MLFLOW
+--------------------------------------------
+
+MLflow Concepts
+- Experiment: A named group of runs (e.g., "churn-prediction-v2").
+- Run: A single model training execution with logged params, metrics, artifacts.
+- Model Registry: A catalog of versioned, stage-labeled model artifacts.
+- Stage transitions: None → Staging → Production → Archived.
+
+Logging Best Practices
+```python
+import mlflow
+
+mlflow.set_experiment("my-experiment")
+
+with mlflow.start_run(run_name="xgboost-baseline"):
+    mlflow.log_params({
+        "n_estimators": 100,
+        "max_depth": 5,
+        "learning_rate": 0.1,
+    })
+    mlflow.log_metrics({
+        "accuracy": 0.91,
+        "f1": 0.89,
+        "auc_roc": 0.95,
+    })
+    mlflow.sklearn.log_model(model, "model")
+    mlflow.log_artifact("feature_importance.png")
+```
+
+Model Registry Workflow
+1. Train model and log to MLflow.
+2. Register model: mlflow.register_model("runs:/<run_id>/model", "MyModel")
+3. Transition to Staging for validation.
+4. Run shadow traffic or A/B test.
+5. Promote to Production.
+6. Archive previous Production version.
+
+Querying the Registry Programmatically
+```python
+from mlflow.tracking import MlflowClient
+client = MlflowClient()
+latest = client.get_latest_versions("MyModel", stages=["Production"])
+model_uri = f"models:/MyModel/Production"
+model = mlflow.sklearn.load_model(model_uri)
+```

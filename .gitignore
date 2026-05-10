@@ -12,6 +12,8 @@ ENV/
 data/raw/*
 data/processed/*
 !data/raw/.gitkeep
+!data/raw/*.txt
+!data/raw/*.pdf
 !data/processed/.gitkeep
 models/*.bin
 models/*.safetensors

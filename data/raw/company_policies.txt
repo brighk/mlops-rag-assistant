@@ -1,0 +1,158 @@
+ACME CORPORATION — EMPLOYEE POLICIES HANDBOOK
+Version 3.2 | Effective January 2025
+==============================================
+
+SECTION 1: REMOTE WORK POLICY
+------------------------------
+
+Eligibility
+Employees who have completed their 90-day probationary period and whose role does not require
+on-site presence are eligible to work remotely. Eligibility is determined by the employee's
+direct manager in coordination with HR.
+
+Remote Work Days
+Employees may work remotely up to 3 days per week. The specific days must be agreed upon with
+the direct manager and documented in writing at the start of each quarter. Core collaboration
+days (typically Tuesday and Thursday) require in-office presence unless a formal exception is
+approved by the department head.
+
+Home Office Requirements
+Employees working remotely must maintain a dedicated, distraction-free workspace with:
+- Reliable internet connection (minimum 25 Mbps download / 10 Mbps upload)
+- A locked cabinet or encrypted storage for any physical documents
+- A company-issued or approved device with up-to-date security software
+
+Equipment and Expenses
+The company provides a one-time home office stipend of $800 for eligible employees. Monthly
+internet reimbursement of up to $50 is available upon submission of receipts. Personal devices
+used for work must be enrolled in the company MDM solution.
+
+Availability and Responsiveness
+Remote employees must be reachable during core hours (9:00 AM – 5:00 PM local time) via Slack
+and email. Video camera must be enabled during all team meetings unless a technical issue is
+reported to IT in advance.
+
+Performance and Accountability
+Remote work is a privilege contingent on sustained performance. Managers may revoke remote work
+eligibility with 2 weeks' notice if performance or collaboration issues arise.
+
+---
+
+SECTION 2: LEAVE POLICY
+------------------------
+
+Annual Leave
+Full-time employees accrue 15 days of paid annual leave per year, increasing to 20 days after
+3 years of service and 25 days after 7 years. Leave must be requested in the company HR portal
+at least 5 business days in advance for periods of 3 or more consecutive days.
+
+Sick Leave
+Employees are entitled to 10 days of paid sick leave per calendar year. Sick leave does not
+carry over to the following year. For absences longer than 3 consecutive days, a medical
+certificate from a licensed physician is required.
+
+Parental Leave
+Primary caregivers: 16 weeks fully paid parental leave, commencing from the birth or adoption
+date. Secondary caregivers: 4 weeks fully paid parental leave. Leave may be taken in one
+continuous block or split into two periods within the first 12 months.
+
+Public Holidays
+Employees observe all public holidays in their country of employment. Remote employees in
+countries with different public holiday schedules follow the schedule of their country of
+residence.
+
+Unpaid Leave
+Extended unpaid leave of up to 12 weeks may be granted for exceptional personal circumstances,
+subject to manager and HR approval. Benefits (health insurance, pension contributions) continue
+during unpaid leave for periods up to 4 weeks.
+
+---
+
+SECTION 3: EXPENSE POLICY
+--------------------------
+
+Approval Thresholds
+- Under $50: No pre-approval required; submit within 30 days with receipt.
+- $50 – $500: Manager approval required before expense is incurred.
+- Over $500: Department head approval required. Finance team must be notified.
+
+Travel Expenses
+Economy class flights are the default for all business travel. Business class is permitted for
+flights exceeding 8 hours or where the employee travels overnight. Hotel bookings should not
+exceed the city rate cap published quarterly by Finance (available on the intranet).
+
+Meal Allowance
+$75 per day for domestic travel. $100 per day for international travel. Alcohol is reimbursable
+only at client entertainment events with prior manager approval.
+
+Non-Reimbursable Items
+The following are not reimbursable: personal entertainment, mini-bar charges, traffic fines,
+gym fees, and any expense not directly related to business activity.
+
+Submission Deadline
+All expense reports must be submitted within 45 days of the expense being incurred. Late
+submissions require CFO approval and may result in non-reimbursement.
+
+---
+
+SECTION 4: CODE OF CONDUCT
+---------------------------
+
+Respect and Inclusion
+ACME is committed to maintaining a workplace free from discrimination, harassment, and bullying.
+All employees are expected to treat colleagues, clients, and partners with dignity and respect,
+regardless of race, gender, age, religion, disability, sexual orientation, or national origin.
+
+Conflicts of Interest
+Employees must disclose any financial interest or secondary employment that could conflict with
+ACME's interests. Disclosure forms are submitted annually to HR and whenever a new potential
+conflict arises.
+
+Confidentiality
+Employees must not disclose proprietary information, client data, trade secrets, or strategic
+plans to third parties without written authorization. This obligation survives employment
+termination for a period of 2 years.
+
+Use of Company Resources
+Company devices, networks, and software licenses are for business use. Incidental personal use
+is acceptable provided it does not compromise security, violate any policy, or create liability
+for the company.
+
+Social Media
+Employees must not post content that disparages ACME, its clients, or colleagues. Personal
+opinions shared publicly must be clearly identified as personal views and not those of the company.
+
+Reporting Violations
+Employees who observe a potential policy violation should report it to their manager, HR, or
+through the anonymous Ethics Hotline: ethics@acme-corp.com or +1-800-ACME-ETH.
+
+Disciplinary Process
+Violations of this Code may result in a written warning, suspension, or termination, depending
+on severity. All investigations are conducted confidentially by HR.
+
+---
+
+SECTION 5: DATA HANDLING POLICY
+---------------------------------
+
+Data Classification
+ACME classifies data into four tiers:
+- Public: Marketing materials, press releases.
+- Internal: General business communications, meeting notes.
+- Confidential: Client contracts, financial reports, HR records.
+- Restricted: Personal Identifiable Information (PII), payment data, trade secrets.
+
+Handling Requirements
+Confidential and Restricted data must be stored only in approved, encrypted systems. Transfer
+of Restricted data outside the company network requires VPN and encryption. Physical documents
+containing Restricted data must be shredded when no longer needed.
+
+Data Retention
+Customer data is retained for the duration of the contract plus 3 years, unless legal hold
+applies. Employee records are retained for 7 years post-employment. Marketing data is reviewed
+annually and purged if no longer needed.
+
+Breach Response
+Any suspected data breach must be reported to the Information Security team within 1 hour of
+discovery. The IS team initiates the Incident Response Plan and notifies affected parties
+within 72 hours as required by GDPR.

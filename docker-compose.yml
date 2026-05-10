@@ -1,0 +1,50 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rag-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+      - ./configs:/app/configs
+      - ./mlruns:/app/mlruns
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-phi3}
+      - MLFLOW_TRACKING_URI=/app/mlruns
+      - CHROMA_PERSIST_DIR=/app/data/vector_store
+    depends_on:
+      - ollama
+      - mlflow
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: rag-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_models:/root/.ollama
+    restart: unless-stopped
+
+  mlflow:
+    build:
+      context: .
+      dockerfile: Dockerfile.mlflow
+    container_name: rag-mlflow
+    ports:
+      - "5000:5000"
+    volumes:
+      - mlflow_data:/mlruns
+    restart: unless-stopped
+
+volumes:
+  ollama_models:
+  mlflow_data:

@@ -1,16 +1,18 @@
 """
 LLM using Ollama API - Much easier!
 """
+import os
 import requests
 import yaml
 
 class OllamaLLM:
     """Use Ollama for LLM inference"""
-    
+
     def __init__(self, config_path: str = "configs/config.yaml"):
-        self.api_url = "http://localhost:11434/api/generate"
-        self.model = "phi3"
-        print("✓ Using Ollama API")
+        ollama_host = os.getenv("OLLAMA_HOST", "http://localhost:11434")
+        self.api_url = f"{ollama_host}/api/generate"
+        self.model = os.getenv("OLLAMA_MODEL", "phi3")
+        print(f"✓ Using Ollama API at {ollama_host} (model: {self.model})")
     
     def generate(self, prompt: str, max_length: int = 512) -> str:
         """Generate using Ollama"""

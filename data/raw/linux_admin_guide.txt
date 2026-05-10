@@ -1,0 +1,247 @@
+LINUX SERVER ADMINISTRATION RUNBOOK
+Infrastructure Team — Internal Reference
+Version 2.1 | Updated February 2025
+======================================
+
+CHAPTER 1: SSH HARDENING
+--------------------------
+
+1.1 Disable Password Authentication
+Edit /etc/ssh/sshd_config and set the following:
+
+    PasswordAuthentication no
+    PubkeyAuthentication yes
+    PermitRootLogin no
+    MaxAuthTries 3
+    LoginGraceTime 30
+
+Restart the SSH daemon after changes:
+
+    sudo systemctl restart sshd
+
+1.2 SSH Key Rotation Procedure
+SSH keys should be rotated every 12 months or immediately upon staff departure.
+
+Steps:
+1. Generate a new key pair on the admin workstation:
+       ssh-keygen -t ed25519 -C "admin@company.com-$(date +%Y%m)"
+2. Add the new public key to authorized_keys on all target servers:
+       ssh-copy-id -i ~/.ssh/id_ed25519.pub user@server
+3. Verify login works with the new key.
+4. Remove the old key from authorized_keys on all servers.
+5. Delete the old private key from the workstation.
+6. Update the key inventory in IT documentation.
+
+1.3 Two-Factor Authentication for SSH
+Install and configure Google Authenticator PAM:
+
+    sudo apt install libpam-google-authenticator
+    google-authenticator  # Run as each user who needs 2FA
+
+Add to /etc/pam.d/sshd:
+    auth required pam_google_authenticator.so
+
+In /etc/ssh/sshd_config:
+    ChallengeResponseAuthentication yes
+    AuthenticationMethods publickey,keyboard-interactive
+
+1.4 Port Hardening
+Change the default SSH port in high-exposure environments:
+
+    Port 2222  # In /etc/ssh/sshd_config
+
+Update firewall rules accordingly:
+
+    sudo ufw allow 2222/tcp
+    sudo ufw deny 22/tcp
+
+---
+
+CHAPTER 2: USER MANAGEMENT
+---------------------------
+
+2.1 Creating New Admin Users
+Follow the principle of least privilege. Use sudo groups instead of root access.
+
+    sudo adduser newadmin
+    sudo usermod -aG sudo newadmin
+
+Verify group membership:
+    groups newadmin
+
+2.2 Offboarding — User Removal
+When an employee leaves, disable their account immediately, then remove after 30 days:
+
+    # Disable account
+    sudo usermod -L username
+    sudo usermod -e 1 username  # Expire immediately
+
+    # After 30-day retention period
+    sudo deluser --remove-home username
+    sudo groupdel username  # If personal group exists
+
+2.3 Privilege Escalation Audit
+Review sudoers weekly:
+
+    sudo cat /etc/sudoers
+    sudo ls /etc/sudoers.d/
+
+Log all sudo activity is enabled by default in /var/log/auth.log.
+
+2.4 Service Accounts
+Service accounts must:
+- Have no login shell: useradd -r -s /usr/sbin/nologin serviceuser
+- Never share credentials
+- Have passwords rotated every 90 days if password auth is used
+
+---
+
+CHAPTER 3: SYSTEM MONITORING
+------------------------------
+
+3.1 Key Metrics to Monitor
+| Metric | Warning Threshold | Critical Threshold |
+|--------|------------------|-------------------|
+| CPU usage | > 80% for 5 min | > 95% for 2 min |
+| Memory usage | > 85% | > 95% |
+| Disk usage | > 80% | > 90% |
+| Load average | > 2x CPU count | > 4x CPU count |
+| Network errors | > 100/min | > 1000/min |
+
+3.2 Real-Time Monitoring Commands
+Check CPU and memory:
+    top
+    htop  # More readable; install with apt install htop
+
+Disk usage:
+    df -hT
+    du -sh /var/log/*  # Find log bloat
+
+Network:
+    ss -tulnp  # Active connections and listening ports
+    iftop       # Real-time bandwidth per connection
+    netstat -s  # Network statistics summary
+
+I/O:
+    iostat -xz 1  # Disk I/O per device, 1-second intervals
+    iotop         # Per-process I/O
+
+3.3 Log Monitoring
+System logs:
+    journalctl -f                   # Follow system journal
+    journalctl -u nginx --since "1 hour ago"  # Service-specific
+    tail -f /var/log/auth.log       # SSH and auth events
+
+Application logs:
+    tail -f /var/log/app/error.log
+    grep "ERROR\|CRITICAL" /var/log/app/*.log | sort -k1,2
+
+Log rotation is managed by logrotate. Review configuration at:
+    /etc/logrotate.conf
+    /etc/logrotate.d/
+
+3.4 Alerting Setup with Prometheus + Alertmanager
+Recommended alert rules (alerts.yml):
+
+    - alert: HighCPU
+      expr: 100 - (avg by(instance)(rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 85
+      for: 5m
+      labels:
+        severity: warning
+
+    - alert: DiskNearFull
+      expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) * 100 < 15
+      for: 2m
+      labels:
+        severity: critical
+
+---
+
+CHAPTER 4: MAINTENANCE PROCEDURES
+-----------------------------------
+
+4.1 Scheduled Maintenance Windows
+Standard maintenance windows: Sundays 02:00–04:00 UTC.
+Emergency maintenance: Notify the on-call engineer and update the status page first.
+
+4.2 System Updates
+Apply security patches on a rolling basis, full system updates in maintenance windows:
+
+    # Security patches only (Debian/Ubuntu)
+    sudo apt update
+    sudo apt upgrade --only-upgrade
+
+    # Full update
+    sudo apt update && sudo apt full-upgrade
+
+    # Check for required reboots
+    cat /var/run/reboot-required
+
+4.3 Kernel Updates
+After a kernel update, schedule a reboot during the next maintenance window:
+
+    uname -r  # Current kernel
+    dpkg --list | grep linux-image  # All installed kernels
+
+Remove old kernels to reclaim space:
+    sudo apt autoremove --purge
+
+4.4 Backup Verification
+Monthly, verify backup integrity by restoring to a test environment:
+
+1. Identify the latest backup file from the S3 bucket.
+2. Spin up a recovery VM.
+3. Restore the backup: tar -xzf backup.tar.gz -C /restore_target
+4. Validate checksums: sha256sum -c backup.sha256
+5. Confirm application starts and serves expected data.
+6. Document results in the Backup Verification Log.
+
+4.5 Certificate Rotation
+TLS certificates issued by Let's Encrypt auto-renew via certbot. Verify the cron job:
+
+    sudo crontab -l | grep certbot
+
+Manual renewal:
+    sudo certbot renew --dry-run   # Test first
+    sudo certbot renew
+
+Internal CA certificates must be rotated manually — see the PKI runbook.
+
+---
+
+CHAPTER 5: NETWORK CONFIGURATION
+----------------------------------
+
+5.1 Firewall (UFW) Standards
+Default policy: deny incoming, allow outgoing.
+
+    sudo ufw default deny incoming
+    sudo ufw default allow outgoing
+    sudo ufw allow ssh
+    sudo ufw allow 443/tcp
+    sudo ufw enable
+
+Review open ports monthly:
+    sudo ufw status verbose
+
+5.2 IP Allowlisting for Admin Access
+Restrict SSH to known admin IP ranges:
+
+    sudo ufw allow from 10.0.0.0/8 to any port 22
+    sudo ufw allow from 192.168.1.0/24 to any port 22
+
+5.3 Fail2Ban Configuration
+Fail2Ban blocks brute-force attempts automatically.
+
+    sudo apt install fail2ban
+    sudo cp /etc/fail2ban/jail.conf /etc/fail2ban/jail.local
+
+Recommended SSH jail settings in jail.local:
+    [sshd]
+    enabled = true
+    maxretry = 3
+    bantime = 3600
+    findtime = 600
+
+Check ban list:
+    sudo fail2ban-client status sshd
